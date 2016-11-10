@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/// <reference path="typings/node.d.ts" />
-
-let lastError: string;
-let lastMessage: string;
+let lastError: string | undefined;
+let lastMessage: string | undefined;
 let errorCount: number;
 let silenceOutput: boolean;
+
+let DEBUG = false;
 
 let getContext = () => (<ErrorContext> {});
 
@@ -29,6 +29,10 @@ export function reset() {
   lastMessage = undefined;
   errorCount = 0;
   silenceOutput = false;
+}
+
+export function setDebug(debug = true) {
+  DEBUG = debug;
 }
 
 export function silent(f = true) {
@@ -54,6 +58,10 @@ export function error(s: string) {
   lastError = lastMessage;
   if (!silenceOutput) {
     console.error(lastError);
+    if (DEBUG) {
+      let e = new Error("Stack trace");
+      console.error(e.stack);
+    }
   }
   errorCount += 1;
 }
@@ -70,7 +78,7 @@ export function warn(s: string) {
   }
 }
 
-export function getLastMessage(): string {
+export function getLastMessage(): string | undefined {
   return lastMessage;
 }
 
@@ -89,7 +97,7 @@ export function hasErrors(): boolean {
 
 export function errorSummary(): string {
   if (errorCount === 1) {
-    return lastError;
+    return <string> lastError;
   }
 
   if (errorCount !== 0) {

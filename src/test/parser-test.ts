@@ -13,19 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/// <reference path="../typings/node.d.ts" />
-/// <reference path="../typings/mocha.d.ts" />
+import {assert} from 'chai';
+import * as fileIO from '../file-io';
+let readFile = fileIO.readFile;
+import * as logger from '../logger';
+import * as ast from '../ast';
+import * as bolt from '../bolt';
+import * as helper from './test-helper';
+import {samples} from './sample-files';
 
-import chai = require('chai');
-var assert = chai.assert;
-import fileIO = require('../file-io');
-var readFile = fileIO.readFile;
-import logger = require('../logger');
-var parser = require('../rules-parser');
-var parse = parser.parse;
-import ast = require('../ast');
-import bolt = require('../bolt');
-import helper = require('./test-helper');
+let parser = require('../rules-parser');
+let parse = parser.parse;
 
 // TODO: Test duplicated function, and schema definitions.
 
@@ -86,7 +84,7 @@ suite("Rules Parser Tests", function() {
   });
 
   suite("Function Samples", function() {
-    var tests = [
+    var tests: helper.ObjectSpec[] = [
       { data: "function f() { return true; }",
         expect: { f: { params: [], body: ast.boolean(true) } }
       },
@@ -197,7 +195,7 @@ suite("Rules Parser Tests", function() {
 
   suite("Whitespace", function() {
     var fn = "function f() { return true; }";
-    var fnAST = { params: [], body: ast.boolean(true) };
+    var fnAST: ast.Method = { params: [], body: ast.boolean(true) };
 
     var tests = [
       " " + fn,
@@ -218,7 +216,7 @@ suite("Rules Parser Tests", function() {
 
   suite("Comments", function() {
     var fn = "function f() { return true; }";
-    var fnAST = { params: [], body: ast.boolean(true) };
+    var fnAST: ast.Method = { params: [], body: ast.boolean(true) };
 
     var tests = [
       "//Single Line\n" + fn,
@@ -234,7 +232,7 @@ suite("Rules Parser Tests", function() {
   });
 
   suite("Paths", function() {
-    var tests = [
+    var tests: helper.ObjectSpec[] = [
       { data: "path / {}",
         expect: [{ template: new ast.PathTemplate(),
                    isType: ast.typeType('Any'),
@@ -286,7 +284,7 @@ suite("Rules Parser Tests", function() {
   });
 
   suite("Schema", function() {
-    var tests = [
+    var tests: helper.ObjectSpec[] = [
       { data: "type Foo { a: Number }",
         expect: { derivedFrom: ast.typeType('Object'),
                   properties: {a: ast.typeType('Number')},
@@ -479,9 +477,7 @@ suite("Rules Parser Tests", function() {
   });
 
   suite("Sample files", function() {
-    var files = ["all_access", "userdoc", "mail", "children", "create-update-delete"];
-
-    helper.dataDrivenTest(files, function(data) {
+    helper.dataDrivenTest(samples, function(data) {
       var filename = 'samples/' + data + '.' + bolt.FILE_EXTENSION;
       return readFile(filename)
         .then(function(response) {
@@ -566,7 +562,7 @@ suite("Rules Parser Tests", function() {
 });
 
 function sortPaths(paths: ast.Path[]): ast.Path[] {
-  function cmpStr(a, b) {
+  function cmpStr(a: string, b: string): number {
     if (a < b) {
       return -1;
     }
