@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 import {rulesSuite, RulesTest} from '../simulator';
-let secrets = require('../../auth-secrets');
 
 rulesSuite("Chat", function(test) {
   var uid = test.uid;
 
-  test.database(secrets);
+
   test.rules('samples/chat');
 
   function makeMikesRoom(rules: RulesTest): RulesTest {
