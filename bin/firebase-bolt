@@ -163,7 +163,7 @@ function translateRules(input) {
   var rules;
 
   try {
-    symbols = bolt.parse(input);
+    symbols = bolt.parseAsync(input);
   } catch (e) {
     if (DEBUG) {
       log(e.stack);
