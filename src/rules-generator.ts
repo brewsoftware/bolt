@@ -17,6 +17,9 @@ import * as util from './util';
 import * as ast from './ast';
 import {warn, error} from './logger';
 let parser = require('./rules-parser');
+
+import {parseAsync} from './async-parser';
+
 import {parseExpression} from './parse-util';
 
 var errors = {
@@ -89,6 +92,12 @@ export function generate(symbols: string | ast.Symbols): Validator {
   if (typeof symbols === 'string') {
     symbols = parser.parse(symbols);
   }
+  var gen = new Generator(<ast.Symbols> symbols);
+  return gen.generateRules();
+}
+
+export function generateAsync(file: string): Validator {
+  symbols = parser.parse(parseAsync(file));
   var gen = new Generator(<ast.Symbols> symbols);
   return gen.generateRules();
 }

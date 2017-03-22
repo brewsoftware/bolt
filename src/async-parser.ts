@@ -1,4 +1,3 @@
-let through = require('through2');
 let readfile = require('fs-readfile-promise');
 let path = require('path');
 let bolt = require('./rules-parser');
@@ -7,80 +6,85 @@ let fs = require('fs');
   Async file parser for split file systems
   Note: Using a modified bolt syntax to include imports
 */
-const PLUGIN_NAME = 'firebase-async-parser';
 var sym : any; // Global symbols variable
 var cwd :string = '';
-export function parseAsync(filename: string) {
+export function parseAsync(filename: string,
+  cbSuccess: (symbols: any) => void,
+  cbFailure: (error: string) => void) {
+    let baseSymbols = {
+      funtions: [],
+      schema: [],
+      paths: [],
+      imports: []
+    };
     // creating a stream through which each file will pass
-      fs.createReadStream(filename)
-        .pipe(through(function(file : any, enc : any, cb : any) {
-        var newfile = file.clone({contents: false});
-        var content = '';
-        // base relative path
-        var cwdPath = file.cwd.split(path.sep);
-        var histPath = file.history[0].split(path.sep);
-        for (let i = 0; i < cwdPath.length; i++) {
-          histPath.shift();
-        }
-        histPath.pop();
-        cwd = './';
-        if (histPath.length > 0) {
-          cwd = cwd + histPath.join('/');
-        }
+    fs.readFile(filename, (err : any, data : string) =>
+      parserWrapper(err, data, filename, baseSymbols,  cbSuccess, cbFailure));
+}
 
-        if (file.isBuffer()) {
-          content = file.contents.toString();
-          parserWrapper(content).then(function(symbols : any) {
-            readSuccess(symbols, cb, newfile);
-          }).catch(function(ex){
-             //this.emit('error', new PluginError(PLUGIN_NAME, 'Error converting file'));
-             cb();
-          });
-        } else if (file.isStream()) {
-          file.contents.on('data', function(chunk : any) {
-            content = content + chunk;
-          });
-          file.contents.on('end', function() {
-            // make sure the file goes through the next gulp plugin
-            parserWrapper(content ).then(function(symbols : any) {
-                readSuccess(symbols, cb, newfile);
-            }).catch(function(ex) {
-               //this.emit('error', new PluginError(PLUGIN_NAME, 'Error converting file'));
-               cb();
-            });
-          });
-        } else {
-          cb();
-        }
-      }));
-  };
+
     /*
       *************************** Function Section ****************************
     */
+    function mergeSymbols(existingSymbols : any, newRules : any) {
+      for (var funcKey in newRules.functions) {
+          if (newRules.functions.hasOwnProperty(funcKey)) {
+              sym.functions[funcKey] = newRules.functions[funcKey];
+          }
+      }
+      for (var schemaKey in newRules.schema) {
+          if (newRules.schema.hasOwnProperty(schemaKey)) {
+              sym.schema[schemaKey] = newRules.schema[schemaKey];
+          }
+      }
+      for (var pathKey in newRules.paths) {
+          if (newRules.paths.hasOwnProperty(pathKey)) {
+              sym.paths[pathKey] = newRules.paths[pathKey];
+          }
+      }
+      for (var importKey in newRules.imports) {
+          if (newRules.paths.hasOwnProperty(importKey)) {
+              sym.paths[importKey] = newRules.paths[importKey];
+          }
+      }
+      return existingSymbols;
+    }
+/*
+next = getNextFilenameFromContextAndImport({
+  filename: basePath + '/tempfilename',
+  scope: false
+}, next);
+*/
 
-    function parserWrapper(data: string) {
-      var promises = [];
+    /* ******** Async wrapper to setup first run ******* */
+    function parserWrapper(data: string, filename: string, symbols: any, cbSuccess: any, cbFailure: any) {
+      console.log("current context" + filename);
+      let basePath = path.basename(filename);
       sym = bolt.parse(data);
-      var currentDirectoryContext = cwd;
-      console.log("current context" + currentDirectoryContext);
-      while (sym.imports.length > 0) {
-          var next = sym.imports.pop();
+      symbols = mergeSymbols(symbols, sym);
+
+      // Pop through the symbol list
+      let callback = (newSymbols: any) => {
+            if (sym.imports.length > 0) {
+              let next = sym.imports.pop();
+              fs.readFile(next.filename, (err : any, data : string) =>
+                parserWrapper(err, data, next.filename, symbols,  cbSuccess, cbFailure));
+            } else {
+              cbSuccess(symbols); // Final call
+            }
+        }
+
+        if(sym.imports.length > 0) {
           next = getNextFilenameFromContextAndImport({
-            filename: cwd + '/tempfilename',
+            filename: basePath + '/tempfilename',
             scope: false
           }, next);
-          var p = processRecursive(next);
-          promises.push(p);
-      } // end while
-      var retPromise = new Promise(function(resolve, reject){
-        Promise.all(promises).then(function(){
-          console.log(sym);
-          resolve(sym);
-        }).catch(function(ex){
-          console.log(ex);
-        });
-      });
-      return retPromise;
+
+          fs.readFile(next.filename, (err : any, data : string) =>
+            callback(data, next.filename, symbols, , cbFailure);
+        } else {
+          cbSuccess(symbols);
+        }
     }; // end function
 
     function getNextFilenameFromContextAndImport(current : any, nextImport : any) {
@@ -110,7 +114,7 @@ export function parseAsync(filename: string) {
 
     function processRecursive(next : any) {
 
-      var promises = [];
+      var promises : any = [];
       var p = new Promise(function(resolve, reject) {
 
         console.log("Reading: " + JSON.stringify(next));
@@ -141,6 +145,7 @@ export function parseAsync(filename: string) {
                     sym.paths[pathKey] = newRules.paths[pathKey];
                 }
             }
+
             /*
             {
               filename:
@@ -148,6 +153,7 @@ export function parseAsync(filename: string) {
               scope: fale = local
             }
             */
+
             for (var impKey in newRules.imports) {
                 var imp = getNextFilenameFromContextAndImport(next, newRules.imports[impKey]);
 
@@ -179,7 +185,7 @@ export function parseAsync(filename: string) {
     * readSuccess -Final call with all the symboly loaded
     * calls the original parser function after the parser has succeeded.
     */
-    function readSuccess(symbols : any, cb : any, newfile : any) {
+    function readSuccess(symbols : any, cb : any) {
       var gen = new bolt.Generator(symbols);
       var rules = gen.generateRules();
       var output =  JSON.stringify(rules, null, 2);
