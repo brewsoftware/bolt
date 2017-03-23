@@ -7,7 +7,7 @@ let fs = require('fs');
   Note: Using a modified bolt syntax to include imports
 */
 var sym : any; // Global symbols variable
-var cwd :string = '';
+
 export function parseAsync(filename: string,
   cbSuccess: (symbols: any) => void,
   cbFailure: (error: string) => void) {
@@ -19,7 +19,7 @@ export function parseAsync(filename: string,
     };
     // creating a stream through which each file will pass
     fs.readFile(filename, (err : any, data : string) =>
-      parserWrapper(err, data, filename, baseSymbols,  cbSuccess, cbFailure));
+      parserWrapper(data, filename, baseSymbols,  cbSuccess, cbFailure));
 }
 
 
@@ -62,7 +62,8 @@ next = getNextFilenameFromContextAndImport({
       let basePath = path.basename(filename);
       sym = bolt.parse(data);
       symbols = mergeSymbols(symbols, sym);
-
+      console.log(sym);
+      /*
       // Pop through the symbol list
       let callback = (newSymbols: any) => {
             if (sym.imports.length > 0) {
@@ -84,7 +85,7 @@ next = getNextFilenameFromContextAndImport({
             callback(data, next.filename, symbols, , cbFailure);
         } else {
           cbSuccess(symbols);
-        }
+        }*/
     }; // end function
 
     function getNextFilenameFromContextAndImport(current : any, nextImport : any) {
@@ -181,15 +182,3 @@ next = getNextFilenameFromContextAndImport({
     });
     return retPromise;
     }
-    /*
-    * readSuccess -Final call with all the symboly loaded
-    * calls the original parser function after the parser has succeeded.
-    */
-    function readSuccess(symbols : any, cb : any) {
-      var gen = new bolt.Generator(symbols);
-      var rules = gen.generateRules();
-      var output =  JSON.stringify(rules, null, 2);
-      newfile.contents = new Buffer(output);
-      newfile.path = newfile.path.replace('.bolt', '.json');
-      cb(null, newfile); // finished
-    };

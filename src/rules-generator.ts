@@ -97,7 +97,7 @@ export function generate(symbols: string | ast.Symbols): Validator {
 }
 
 export function generateAsync(file: string): Validator {
-  symbols = parser.parse(parseAsync(file));
+  let symbols = parser.parse(parseAsync(file));
   var gen = new Generator(<ast.Symbols> symbols);
   return gen.generateRules();
 }
