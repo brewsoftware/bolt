@@ -1,0 +1,15 @@
+type TypeOne extends String {
+	validate() { true }
+}
+
+type Alpha extends String {
+  validate() { this.test(/^[a-zA-Z]*$/) }
+}
+
+type Alphanumeric extends String{
+  validate() { this.test(/^[a-zA-Z0-9]*$/) }
+}
+
+type Ascii extends String {
+  validate() { this.test(/^[\x00-\x7F]+$/) }
+}
