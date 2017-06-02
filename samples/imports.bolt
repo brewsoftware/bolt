@@ -1,0 +1,28 @@
+// import * as types from './subModule/typeOne'
+// import {Alpha, AlphaNumeric} from './subModel/typeOne'
+import {Alpha} from './subModule/typeOne'
+//import {Ascii} as tmp from './subModule/typeOne'
+
+path / {
+  read() {true}
+  write() {false}
+}
+
+path /test {
+  read() {true}
+}
+
+path /alpha is Alpha {
+  read() {true}
+}
+/*
+
+path /alphanumeric is types.AlphaNumeric {
+  read() { true }
+}
+
+
+path /ascii is tmp.Ascii {
+  read() { true }
+}
+*/
