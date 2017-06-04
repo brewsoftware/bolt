@@ -100,8 +100,10 @@ export interface Method {
 export interface Import {
   filename: string;
   alias: string;
-  scope: boolean;
+  scope: string;
+  identifiers: string[];
 }
+
 export class PathPart {
   label: string;
   variable: string;
@@ -545,22 +547,14 @@ export class Symbols {
                                  method(params, body));
   }
 
-  registerImport(alias: string, data: string, scope: string): Import {
-    // type, name, data
-    var theScope = false;
-    if (scope) {
-      theScope = true;
-    }
-    var theAlias = "";
-    if (alias) {
-      theAlias = alias;
-    }
-
+  registerImport(identifiers: string[], alias: string, scope: string, filePath: string) : Import {
     var i: Import = {
-      filename : data,
-      alias: theAlias,
-      scope: !theScope
+      filename : filePath,
+      alias: alias,
+      scope: scope,
+      identifiers: identifiers
     };
+
     this.imports.push(i);
     return i;
   }
