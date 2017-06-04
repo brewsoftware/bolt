@@ -84,21 +84,29 @@ start = _ Statements _ {
 
 Statements = rules:(Statement _)*
 
-Statement = f:Function / p:Path / s:Schema / i:Import
-AliasName "aliasname definition" = " as " _ name:Identifier{
+Statement = i:Import / f:Function / p:Path / s:Schema
+
+// import {types} from './subModel/typeOne';
+// import * as types from './subModule/typeOne';
+// import {Alpha} from './subModule/typeOne';
+// import {Ascii} as tmp from './subModule/typeOne';
+
+AliasName "aliasname definition" = "as" _ name:Identifier {
   return name;
 }
-Import "import definition" = body:"import {'"_ scope:("./" / "../")? _  value:FilePath _"'}"  alias:(AliasName)? {
-  var rebuildValue = value;
-  if(scope){
-    rebuildValue = scope + rebuildValue;
-  }
-  var an = "";
-  if(alias){
-    an = alias;
-  }
-  symbols.registerImport(alias, rebuildValue, scope);
 
+GlobalImport "global import" = "*" {
+  return [];
+}
+
+SpecificImports "specific import" = "{" _ identifiers:IdentifierList _ "}"
+{
+  return identifiers;
+}
+
+
+Import "import definition" = "import" _ identifiers:(GlobalImport / SpecificImports)? _ alias:(AliasName)? _"from" _"'" _ filePath:FilePath _ "'"  {
+  symbols.registerImport(identifiers, alias, '', filePath);
 }
 
 FilePath "file path" = start:[a-zA-Z\.] rest:([a-zA-Z_\.\\\/0-9\- ])+  {
