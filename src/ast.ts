@@ -547,7 +547,7 @@ export class Symbols {
                                  method(params, body));
   }
 
-  registerImport(identifiers: string[], alias: string, scope: string, filePath: string) : Import {
+  registerImport(identifiers: string[], alias: string, filePath: string) : Import {
     var i: Import = {
       filename : filePath,
       alias: alias,

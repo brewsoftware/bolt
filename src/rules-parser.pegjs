@@ -106,7 +106,7 @@ SpecificImports "specific import" = "{" _ identifiers:IdentifierList _ "}"
 
 
 Import "import definition" = "import" _ identifiers:(GlobalImport / SpecificImports)? _ alias:(AliasName)? _"from" _"'" _ filePath:FilePath _ "'"  {
-  symbols.registerImport(identifiers, alias, '', filePath);
+  symbols.registerImport(identifiers, alias, filePath);
 }
 
 FilePath "file path" = start:[a-zA-Z\.] rest:([a-zA-Z_\.\\\/0-9\- ])+  {
