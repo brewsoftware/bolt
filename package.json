@@ -38,6 +38,7 @@
   "scripts": {
     "test": "gulp test",
     "test-chat": "gulp build && mocha lib/test/chat-test --ui tdd",
+    "test-parser": "gulp build && mocha lib/test/parser-test --ui tdd",
     "travis": "gulp"
   },
   "devDependencies": {
