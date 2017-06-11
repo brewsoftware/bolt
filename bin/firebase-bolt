@@ -106,13 +106,13 @@ function main() {
       log("Could not read file: " + inFile);
       process.exit(1);
     }
-    writeTranslation(outFile, data);
+    writeTranslation(outFile, data, inFile);
   });
 }
 
-function writeTranslation(outFile, data) {
+function writeTranslation(outFile, data, inFile) {
   log("Generating " + outFile + "...");
-  fs.writeFile(outFile, translateRules(data) + '\n', 'utf8', function(err2) {
+  fs.writeFile(outFile, translateRules(data, inFile) + '\n', 'utf8', function(err2) {
     if (err2) {
       log("Could not write file: " + outFile);
       process.exit(1);
@@ -158,12 +158,12 @@ function readFile(f, callback) {
   });
 }
 
-function translateRules(input) {
+function translateRules(input, inFile) {
   var symbols;
   var rules;
 
   try {
-    symbols = bolt.parseAsync(input);
+    symbols = bolt.parseAsync(inFile);
   } catch (e) {
     if (DEBUG) {
       log(e.stack);
