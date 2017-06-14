@@ -1,32 +1,34 @@
-let readfile = require('fs-readfile-promise');
 let path = require('path');
 let bolt = require('./rules-parser');
 let fs = require('fs');
+
 /*
   Async file parser for split file systems
   Note: Using a modified bolt syntax to include imports
 */
-var sym : any; // Global symbols variable
-
-export function parseAsync(filename: string,
-  cbSuccess: (symbols: any) => void,
-  cbFailure: (error: string) => void) {
-    let baseSymbols = {
+export function parseAsync(filename: string) {
+    let baseSymbols: {
+      funtions: any[],
+      schema: any[],
+      paths: any[],
+      imports: any[]
+    } = {
       funtions: [],
       schema: [],
       paths: [],
       imports: []
     };
+
     // creating a stream through which each file will pass
-    fs.readFile(filename, (err : any, data : string) =>
-      parserWrapper(data, filename, baseSymbols,  cbSuccess, cbFailure));
+    let contents =  fs.readFileSync(filename,"utf8");
+    return parserWrapper(contents, filename, baseSymbols);
 }
 
 
     /*
       *************************** Function Section ****************************
     */
-    function mergeSymbols(existingSymbols : any, newRules : any) {
+    function mergeSymbols(sym : any, newRules : any) {
       for (var funcKey in newRules.functions) {
           if (newRules.functions.hasOwnProperty(funcKey)) {
               sym.functions[funcKey] = newRules.functions[funcKey];
@@ -47,138 +49,56 @@ export function parseAsync(filename: string,
               sym.paths[importKey] = newRules.paths[importKey];
           }
       }
-      return existingSymbols;
+      return sym;
     }
-/*
-next = getNextFilenameFromContextAndImport({
-  filename: basePath + '/tempfilename',
-  scope: false
-}, next);
-*/
 
-    /* ******** Async wrapper to setup first run ******* */
-    function parserWrapper(data: string, filename: string, symbols: any, cbSuccess: any, cbFailure: any) {
-      console.log("current context" + filename);
-      let basePath = path.basename(filename);
-      sym = bolt.parse(data);
+    /* ******** wrapper for recursive parsing ******* */
+    function parserWrapper(data: string, filename: string, symbols: any) {
+      console.log("current context:" + filename);
+      var sym = bolt.parse(data);
+      console.log('Stage 4');
+      // Process any imports in symbol list
+      for(let i=0; i< sym.imports.length; i++) {
+          let next = sym.imports.pop();
+          var nextFilename = getNextFilenameFromContextAndImport(filename, next.filename);
+          console.log('Stage 5');
+          console.log(nextFilename);
+          let contents = fs.readFileSync(nextFilename,'utf8');
+          sym = mergeSymbols(parserWrapper(contents, nextFilename, sym), sym);
+      }
+
       symbols = mergeSymbols(symbols, sym);
-      console.log(sym);
-      /*
-      // Pop through the symbol list
-      let callback = (newSymbols: any) => {
-            if (sym.imports.length > 0) {
-              let next = sym.imports.pop();
-              fs.readFile(next.filename, (err : any, data : string) =>
-                parserWrapper(err, data, next.filename, symbols,  cbSuccess, cbFailure));
-            } else {
-              cbSuccess(symbols); // Final call
-            }
-        }
-
-        if(sym.imports.length > 0) {
-          next = getNextFilenameFromContextAndImport({
-            filename: basePath + '/tempfilename',
-            scope: false
-          }, next);
-
-          fs.readFile(next.filename, (err : any, data : string) =>
-            callback(data, next.filename, symbols, , cbFailure);
-        } else {
-          cbSuccess(symbols);
-        }*/
+      return symbols;
     }; // end function
 
-    function getNextFilenameFromContextAndImport(current : any, nextImport : any) {
+    function getNextFilenameFromContextAndImport(current : string, nextImport : any) {
       // Convert absolute filenames to relative
       // Convert relative filenames to include original path
 
-      var currentFn = current.filename.split('/');
-      var nextFn = nextImport.filename.split('/');
-      if (nextImport.scope) {
-        nextImport.filename = './node_modules/' + nextImport.filename + '/index';
+      current = current.replace('.bolt', '');
+      nextImport = nextImport.replace('.bolt', '');
+      var currentFn = current.split('/');
+      var nextFn = nextImport.split('/');
+      console.log('****');
+      console.log(currentFn);
+      console.log('----');
+      console.log(nextFn);
+      let result = '';
+      if (nextFn[0] != '.' && nextFn[0] != '..') { // global reference
+        result = './node_modules/' + nextImport + '/index';
       } else {
         // import {./something} -> ['.','something'] -> ''
         // import {./something/anotherthing} -> ['.','something','anotherthing'] -> something
 
-        currentFn.pop();
-        while (nextFn[0] === '..') {
-          currentFn.pop();
-          nextFn.shift();
+        currentFn.pop(); // remove trailing file name and leave only the directory
+        nextFn = currentFn.concat(nextFn);
+        // if file.bolt exists then we have it otherwise return
+        console.log(nextFn.join('/') + '.bolt');
+        if(fs.existsSync(nextFn.join('/') + '.bolt')){
+          result = nextFn.join('/') + '.bolt';
+        } else {
+          result = nextFn.join('/') + '/index.bolt';
         }
-        if (nextFn[0] === '.') {
-          nextFn.shift();
-        }
-        nextImport.filename  = currentFn.concat(nextFn).join('/');
       }
-      return nextImport;
-    }
-
-    function processRecursive(next : any) {
-
-      var promises : any = [];
-      var p = new Promise(function(resolve, reject) {
-
-        console.log("Reading: " + JSON.stringify(next));
-        readfile(next.filename  + '.bolt').then(
-          function(subData : any) {
-            console.log("Success Reading: " + next.filename + '.bolt');
-            var subPromises = [];
-            var newRules = bolt.parse(subData.toString());
-            console.log('*******' + next.filename);
-            if (newRules) {
-                newRules.imports.map(function (obj : any) {
-                    sym.imports.push(obj);
-                    return obj;
-                });
-            }
-            for (var funcKey in newRules.functions) {
-                if (newRules.functions.hasOwnProperty(funcKey)) {
-                    sym.functions[funcKey] = newRules.functions[funcKey];
-                }
-            }
-            for (var schemaKey in newRules.schema) {
-                if (newRules.schema.hasOwnProperty(schemaKey)) {
-                    sym.schema[schemaKey] = newRules.schema[schemaKey];
-                }
-            }
-            for (var pathKey in newRules.paths) {
-                if (newRules.paths.hasOwnProperty(pathKey)) {
-                    sym.paths[pathKey] = newRules.paths[pathKey];
-                }
-            }
-
-            /*
-            {
-              filename:
-              alias:
-              scope: fale = local
-            }
-            */
-
-            for (var impKey in newRules.imports) {
-                var imp = getNextFilenameFromContextAndImport(next, newRules.imports[impKey]);
-
-                // check for global modules
-                var inner = processRecursive(imp);
-                subPromises.push(inner);
-                // push a new import path
-            }
-            Promise.all(subPromises).then(function() {
-              resolve();
-            }).catch(function(ex : any){
-              this.emit('error in parsed files');
-            });
-
-        }); // end readFile
-      }); // end promise
-    promises.push(p);
-
-    var retPromise = new Promise(function(resolve, reject) {
-      Promise.all(promises).then(function(){
-        resolve();
-      }).catch(function(ex : any){
-        console.log(ex);
-      });
-    });
-    return retPromise;
+      return result;
     }
