@@ -100,7 +100,6 @@ export interface Method {
 export interface Import {
   filename: string;
   alias: string;
-  scope: string;
   identifiers: string[];
 }
 
@@ -551,7 +550,6 @@ export class Symbols {
     var i: Import = {
       filename : filePath,
       alias: alias,
-      scope: scope,
       identifiers: identifiers
     };
 

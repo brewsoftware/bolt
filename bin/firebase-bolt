@@ -106,13 +106,24 @@ function main() {
       log("Could not read file: " + inFile);
       process.exit(1);
     }
-    writeTranslation(outFile, data, inFile);
+    writeTranslationAsync(outFile, data, inFile);
+  });
+}
+function writeTranslation(outFile, data, inFile) {
+  log("Generating regular " + outFile + "...");
+
+  fs.writeFile(outFile, translateRules(data) + '\n', 'utf8', function(err2) {
+    if (err2) {
+      log("Could not write file: " + outFile);
+      process.exit(1);
+    }
   });
 }
 
-function writeTranslation(outFile, data, inFile) {
-  log("Generating " + outFile + "...");
-  fs.writeFile(outFile, translateRules(data, inFile) + '\n', 'utf8', function(err2) {
+function writeTranslationAsync(outFile, data, inFile) {
+  log("Generating Async" + outFile + "...");
+
+  fs.writeFile(outFile, translateRulesAsync(inFile) + '\n', 'utf8', function(err2) {
     if (err2) {
       log("Could not write file: " + outFile);
       process.exit(1);
@@ -158,12 +169,14 @@ function readFile(f, callback) {
   });
 }
 
-function translateRules(input, inFile) {
+function translateRules(input){
   var symbols;
-  var rules;
 
   try {
-    symbols = bolt.parseAsync(inFile);
+    symbols = bolt.parse(input);
+    console.log('2222-1111-1111');
+    console.log(symbols);
+    return continueTranslateRules(symbols);
   } catch (e) {
     if (DEBUG) {
       log(e.stack);
@@ -171,10 +184,31 @@ function translateRules(input, inFile) {
     log(e.message, e.line, e.column);
     process.exit(1);
   }
+}
 
+function translateRulesAsync(inFile) {
+  var symbols;
+
+  try {
+    symbols = bolt.parseAsync(inFile);
+    console.log('1111-1111-1111');
+    console.log(symbols);
+    return continueTranslateRules(symbols);
+  } catch (e) {
+    if (DEBUG) {
+      log(e.stack);
+    }
+    log(e.message, e.line, e.column);
+    process.exit(1);
+  }
+}
+
+function continueTranslateRules(symbols){
+  var rules;
   try {
     var gen = new bolt.Generator(symbols);
     rules = gen.generateRules();
+    console.log(rules);
   } catch (e) {
     if (DEBUG) {
       log(e.stack);
