@@ -11,8 +11,9 @@ type Alpha extends String {
   validate() { this.test(/^[a-zA-Z]*$/) }
 }
 
-type Alphanumeric extends String{
+type Alphanumeric {
   validate() { this.test(/^[a-zA-Z0-9]*$/) }
+	alphaValue: String
 }
 
 type Ascii extends String {
