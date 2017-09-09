@@ -10,9 +10,6 @@ import { SampleOne } from './subModule/typeOne'
 // Lvl 5 - import with an adjusted path
 // import from './subModule/typeOne' at '/somewhere' // duplicate import test
 
-path / is SampleOne {
- validate() { true }
-}
 
 type Test extends Another {
   validate() { this.test(/^[0-9]*$/) }
@@ -22,10 +19,8 @@ type Another {
   validate() { this.message.length < 14 }
   something : String
 }
-
-path / is Another {
-  read() {true}
-  write() {false}
+path / is SampleOne {
+ validate() { true }
 }
 
 path /test is Alphanumeric {
@@ -40,6 +35,6 @@ path /alphanumeric is types.Alphanumeric {
   read() { true }
 }
 
-path /ascii is tmp.Ascii {
+path /ascii is Ascii {
   read() { true }
 }

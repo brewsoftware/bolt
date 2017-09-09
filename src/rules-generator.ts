@@ -18,7 +18,7 @@ import * as ast from './ast';
 import {warn, error} from './logger';
 let parser = require('./rules-parser');
 
-import {parseAsync} from './async-parser';
+import { parseWithImports } from './imports-parser';
 
 import {parseExpression} from './parse-util';
 
@@ -90,15 +90,10 @@ var writeAliases = <{ [method: string]: ast.Exp }> {
 //   json = bolt.generate(bolt-text)
 export function generate(symbols: string | ast.Symbols): Validator {
   if (typeof symbols === 'string') {
-    symbols = parser.parse(symbols);
+    symbols = parser.parse(parseWithImports(symbols));
   }
   var gen = new Generator(<ast.Symbols> symbols);
   return gen.generateRules();
-}
-
-export function generateAsync(file: string): Validator {
-  let symbols = parser.parse(parseAsync(file));
-  return symbols;
 }
 
 // Symbols contains:
@@ -427,28 +422,24 @@ export class Generator {
     var schema = lSymbols.schema[schemaName.name];
     let ref = this;
 
+    // imp.alias is the alias to apply to the imports
+    // schemaName.namespace is the alias applied to the type
     if(!schema) {
-      lSymbols.imports.map( imp => {
-        // Most specific first
-        if(imp.alias && imp.alias == schemaName.namespace) {
-          if(imp.identifiers.indexOf(schemaName.name)>=0 || imp.identifiers.length == 0){
+      lSymbols.imports
+        .sort(function(x, y) {
+          return x.alias ? 1: 0;
+        }).map( imp => {
+        if(imp.alias == schemaName.namespace) {
+          if(imp.identifiers.indexOf(schemaName.name) >= 0 || imp.identifiers.length == 0) {
             schema = imp.symbols.schema[schemaName.name];
+            if(schema) {
+              let derivedValidator = ref.createValidatorFromSchema(schema, imp.symbols);
+              return extendValidator(derivedValidator, this.ensureValidator(schema.derivedFrom,imp.symbols));
+            }
           }
         }
       });
     }
-    if(!schema) {
-      lSymbols.imports.map( imp => {
-        if (!imp.alias){
-          if(imp.identifiers.indexOf(schemaName.name)>=0 || imp.identifiers.length == 0){
-            schema = imp.symbols.schema[schemaName.name];
-            let derivedValidator = ref.createValidatorFromSchema(schema, imp.symbols);
-            return extendValidator(derivedValidator, this.ensureValidator(schema.derivedFrom,imp.symbols));
-          }
-        }
-      });
-    }
-
 
     // Fall back to generics if it get's to that.
     // Question: Will this break the generic test below?
@@ -494,8 +485,6 @@ export class Generator {
 
     if (!(schema.derivedFrom.type === 'type' &&
           (<ast.ExpSimpleType> schema.derivedFrom).name === 'Any')) {
-            console.log('extending any');
-            console.log(schema.derivedFrom);
       extendValidator(validator, this.ensureValidator(schema.derivedFrom,lSymbols));
     }
 
