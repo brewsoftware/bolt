@@ -79,6 +79,7 @@ export interface TypeParams { [name: string]: ExpType; };
 // Simple Type (reference)
 export interface ExpSimpleType extends Exp {
   name: string;
+  namespace?: string;
 }
 
 // Union Type: Type1 | Type2 | ...
@@ -101,6 +102,8 @@ export interface Import {
   filename: string;
   alias: string;
   identifiers: string[];
+  context: number;
+  symbols?: Symbols;
 }
 
 export class PathPart {
@@ -506,6 +509,9 @@ export function method(params: string[], body: Exp): Method {
     body: body
   };
 }
+export function typeTypeNamespaced(typeName: string, namespace: string){
+  return { type: "type", valueType: "type", name: typeName, namespace: namespace};
+}
 
 export function typeType(typeName: string): ExpSimpleType {
   return { type: "type", valueType: "type", name: typeName };
@@ -515,9 +521,13 @@ export function unionType(types: ExpType[]): ExpUnionType {
   return { type: "union", valueType: "type", types: types };
 }
 
+export function genericTypeNamespaced(typeName: string, params: ExpType[], namespace: string) {
+  return { type: "generic", valueType: "type", name: typeName, params: params, namespace: namespace };
+}
 export function genericType(typeName: string, params: ExpType[]): ExpGenericType {
   return { type: "generic", valueType: "type", name: typeName, params: params };
 }
+var uniqueId = 0;
 
 export class Symbols {
   functions: { [name: string]: Method };
@@ -546,13 +556,14 @@ export class Symbols {
                                  method(params, body));
   }
 
-  registerImport(identifiers: string[], alias: string, filePath: string) : Import {
+  registerImport(identifiers: string[], alias: string, filePath: string): Import {
+    uniqueId++;
     var i: Import = {
       filename : filePath,
       alias: alias,
-      identifiers: identifiers
+      identifiers: identifiers,
+      context: uniqueId // switch to optional if available, not initialized
     };
-
     this.imports.push(i);
     return i;
   }

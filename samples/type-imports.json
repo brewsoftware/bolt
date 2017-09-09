@@ -1,0 +1,29 @@
+{
+  "rules": {
+    ".validate": "newData.hasChildren(['something']) && newData.isString() && newData.val().matches(/^[a-z]*$/) && newData.isString() && newData.isString() && newData.val().matches(/^[a-z]*$/) && newData.isString() && newData.child('message').val().length < 14",
+    "something": {
+      ".validate": "newData.isString()"
+    },
+    "$other": {
+      ".validate": "false"
+    },
+    ".read": "true",
+    ".write": "false",
+    "test": {
+      ".validate": "newData.isString() && newData.val().matches(/^[a-zA-Z0-9]*$/) && newData.isString()",
+      ".read": "true"
+    },
+    "alpha": {
+      ".validate": "newData.isString() && newData.val().matches(/^[a-zA-Z]*$/) && newData.isString()",
+      ".read": "true"
+    },
+    "alphanumeric": {
+      ".validate": "newData.isString() && newData.val().matches(/^[a-zA-Z0-9]*$/) && newData.isString()",
+      ".read": "true"
+    },
+    "ascii": {
+      ".validate": "newData.isString() && newData.val().matches(/^[\\x00-\\x7F]+$/) && newData.isString()",
+      ".read": "true"
+    }
+  }
+}

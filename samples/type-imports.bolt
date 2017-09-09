@@ -1,0 +1,45 @@
+// Lvl 1 - simply import everything.
+import * from './subModule/typeOne'
+// Lvl 2 - import single item only
+import {Alpha, Alphanumeric} from './subModule/typeOne'
+// Lvl 3 - import as an aliased type
+import {Alpha, Alphanumeric} as types from './subModule/typeOne'
+// Lvl 4 - import recursive types
+import { SampleOne } from './subModule/typeOne'
+
+// Lvl 5 - import with an adjusted path
+// import from './subModule/typeOne' at '/somewhere' // duplicate import test
+
+path / is SampleOne {
+ validate() { true }
+}
+
+type Test extends Another {
+  validate() { this.test(/^[0-9]*$/) }
+}
+
+type Another {
+  validate() { this.message.length < 14 }
+  something : String
+}
+
+path / is Another {
+  read() {true}
+  write() {false}
+}
+
+path /test is Alphanumeric {
+  read() {true}
+}
+
+path /alpha is Alpha {
+  read() {true}
+}
+
+path /alphanumeric is types.Alphanumeric {
+  read() { true }
+}
+
+path /ascii is tmp.Ascii {
+  read() { true }
+}

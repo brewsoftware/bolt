@@ -39,7 +39,8 @@
     "test": "gulp test",
     "test-chat": "gulp build && mocha lib/test/chat-test --ui tdd",
     "test-parser": "gulp build && mocha lib/test/parser-test --ui tdd",
-    "travis": "gulp"
+    "travis": "gulp",
+    "test-imports": "./bin/firebase-bolt ./samples/type-imports.bolt "
   },
   "devDependencies": {
     "browserify": "^11.0.1",

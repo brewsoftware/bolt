@@ -174,8 +174,6 @@ function translateRules(input){
 
   try {
     symbols = bolt.parse(input);
-    console.log('2222-1111-1111');
-    console.log(symbols);
     return continueTranslateRules(symbols);
   } catch (e) {
     if (DEBUG) {
@@ -191,8 +189,6 @@ function translateRulesAsync(inFile) {
 
   try {
     symbols = bolt.parseAsync(inFile);
-    console.log('1111-1111-1111');
-    console.log(symbols);
     return continueTranslateRules(symbols);
   } catch (e) {
     if (DEBUG) {

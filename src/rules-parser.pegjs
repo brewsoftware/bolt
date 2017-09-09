@@ -314,19 +314,29 @@ TypeExpression  = head:SingleType tail:(_ "|" _ type:SingleType { return type; }
   return ast.unionType(tail);
 }
 
+NamespacedIdentifier = namespace:(Identifier ".")? id:Identifier {
+  if(namespace){
+    namespace = namespace[0];
+  }
+  return {
+    namespace: namespace,
+    id: id
+  }
+}
+
 // Type, Type[], or Type<X, ... >
 // where Type[] === Map<String, Type>
-SingleType = type:Identifier opt:("\[\]" {return {isMap: true}; }
+SingleType = type:NamespacedIdentifier opt:("\[\]" {return {isMap: true}; }
                                   / "<" _ types:TypeList ">" {return {types: types};})? _ {
-  type = ensureUpperCase(type, "Type names");
+  ensureUpperCase(type.id, "Type names");
   if (!opt) {
-    return ast.typeType(type);
+    return ast.typeTypeNamespaced(type.id, type.namespace);
   }
   if (opt.isMap) {
-    return ast.genericType('Map', [ast.typeType('String'),
-                                   ast.typeType(type)]);
+    return ast.genericType('Map', [ast.typeType('String', null),
+                                   ast.typeTypeNamespaced(type.id, type.namespace)]);
   }
-  return ast.genericType(type, opt.types);
+  return ast.genericType(type.id, opt.types);
 }
 
 TypeList = head:TypeExpression tail:(_ "," _ type:TypeExpression { return type; })* _ {
